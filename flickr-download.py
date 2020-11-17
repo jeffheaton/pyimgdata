@@ -1,5 +1,5 @@
-// Flickr Download, by Jeff Heaton (http://www.heatonresearch.com)
-// Copyright 2020, MIT License
+# Flickr Download, by Jeff Heaton (http://www.heatonresearch.com)
+# Copyright 2020, MIT License
 import flickrapi
 import requests
 import logging
