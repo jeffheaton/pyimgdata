@@ -1,4 +1,5 @@
 # Flickr Download, by Jeff Heaton (http://www.heatonresearch.com)
+# https://github.com/jeffheaton/pyimgdata
 # Copyright 2020, MIT License
 import flickrapi
 import requests
