@@ -1,5 +1,5 @@
-// Flickr Download, by Jeff Heaton (http://www.heatonresearch.com)
-// Copyright 2020, MIT License
+# Flickr Download, by Jeff Heaton (http://www.heatonresearch.com)
+# Copyright 2020, MIT License
 import flickrapi
 import requests
 import logging
@@ -8,6 +8,7 @@ import os
 import configparser
 import time
 import csv
+import sys
 from urllib.request import urlretrieve
 from PIL import Image
 from io import BytesIO
@@ -28,7 +29,7 @@ def is_true(str):
 class FlickrImageDownload:
     def __init__(self):
         self.config = configparser.ConfigParser()
-        self.config.read("config.ini")
+        self.config.read("config_flickr.ini")
         logging.config.fileConfig("logging.properties")
         
         self.config_path = self.config['Download']['path']
@@ -73,6 +74,9 @@ class FlickrImageDownload:
             img = Image.open(BytesIO(response.content))
             img.load()
             return img, h
+        except KeyboardInterrupt:
+            logging.info("Keyboard interrupt, stopping")
+            sys.exit(0)
         except:
             logging.warning(f"Unexpected exception while downloading image: {url}" , exc_info=True)
             return None, None
@@ -105,7 +109,7 @@ class FlickrImageDownload:
             logging.debug(f"Image already exists: {url}")
             return None
         
-    def process_image(self, image):        
+    def process_image(self, image, path):        
         width, height = image.size
         
         # Crop the image, centered
@@ -124,6 +128,14 @@ class FlickrImageDownload:
                 self.config_scale_width, 
                 self.config_scale_height), 
                 Image.ANTIALIAS)
+
+
+        # Convert to full color (no grayscale, no transparent)
+        if image.mode not in ('RGB'):
+            logging.debug(f"Grayscale to RGB: {path}")
+            rgbimg = Image.new("RGB", image.size)
+            rgbimg.paste(image)
+            image = rgbimg
             
         return image
                 
@@ -168,7 +180,7 @@ class FlickrImageDownload:
             if img: 
                 path = self.check_to_keep_photo(url, img)
                 if path:
-                    img = self.process_image(img)
+                    img = self.process_image(img, path)
                     img.save(path)
             
             if self.track_progress():
