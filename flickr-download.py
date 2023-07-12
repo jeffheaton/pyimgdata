@@ -89,7 +89,7 @@ class FlickrImageDownload:
         if not photo.get('url_o'):
             url = photo.get('url_b')
         else:
-            url = "https://live.staticflickr.com/"+photo.get('server')+"/"+photo.get('id')+"_"+photo.get('originalsecret')+"_o."+photo.get('originalformat')
+            url = photo.get("url_o")
         license = photo.get('license')
 
         if int(license) in self.config_license_allowed and url:
@@ -105,7 +105,6 @@ class FlickrImageDownload:
     def check_to_keep_photo(self, url, image):
         h = sha256(image.tobytes()).hexdigest()
         p = os.path.join(self.config_path, f"{self.config_prefix}-{h}.{self.config_format}")
-        self.sources.append([url,p])
         if not os.path.exists(p):
             self.download_count += 1
             logging.debug(f"Downloaded: {url} to {p}")
@@ -114,6 +113,26 @@ class FlickrImageDownload:
             self.cached += 1
             logging.debug(f"Image already exists: {url}")
             return None
+        
+    def get_metadata(self, url, photo, image):
+        hash = sha256(image.tobytes()).hexdigest()
+        p = os.path.join(self.config_path, f"{self.config_prefix}-{hash}.{self.config_format}")
+        #url_l, url_o ,license, description, date_taken, owner_name, original_format, geo, o_dims
+        l = photo.get('license')
+        t = photo.get('title')
+        d = photo.get('description')
+        dt = photo.get('datetaken')
+        lat = photo.get('latitude')
+        lon = photo.get('longitude') 
+        geo_acc = photo.get('accuracy')
+        if not photo.get('width_o'):
+            w = photo.get('width_l')
+            h = photo.get('height_l')
+        else:
+            w = photo.get('width_o')
+            h = photo.get('height_o')
+        self.sources.append([url, p, l, t, d, dt, lat, lon, geo_acc, w, h])
+        return None
         
     def process_image(self, image, path):        
         width, height = image.size
@@ -184,6 +203,7 @@ class FlickrImageDownload:
             img, url = self.obtain_photo(photo)
             if img: 
                 path = self.check_to_keep_photo(url, img)
+                self.get_metadata(url, photo, img)
                 if path:
                 #    img = self.process_image(img, path)
                     img.save(path)
