@@ -104,7 +104,7 @@ class FlickrImageDownload:
     
     def check_to_keep_photo(self, url, image):
         h = sha256(image.tobytes()).hexdigest()
-        p = os.path.join(self.config_path, f"{self.config_prefix}-{h}.{self.config_format}")
+        p = os.path.join(self.config_path, self.config_prefix, f"{self.config_prefix}-{h}.{self.config_format}")
         if not os.path.exists(p):
             self.download_count += 1
             logging.debug(f"Downloaded: {url} to {p}")
@@ -120,7 +120,7 @@ class FlickrImageDownload:
         #url_l, url_o ,license, description, date_taken, owner_name, original_format, geo, o_dims
         l = photo.get('license')
         t = photo.get('title')
-        d = photo.get('description')
+        #d = photo.get('description')
         dt = photo.get('datetaken')
         lat = photo.get('latitude')
         lon = photo.get('longitude') 
@@ -131,7 +131,7 @@ class FlickrImageDownload:
         else:
             w = photo.get('width_o')
             h = photo.get('height_o')
-        self.sources.append([url, p, l, t, d, dt, lat, lon, geo_acc, w, h])
+        self.sources.append([url, p, l, t, dt, lat, lon, geo_acc, w, h])
         return None
         
     def process_image(self, image, path):        
@@ -180,11 +180,15 @@ class FlickrImageDownload:
     def write_sources(self):
         if self.config_sources_file:
             logging.info("Writing sources file.")
-            filename = os.path.join(self.config_path, self.config_sources_file+'.csv')
+            filename = os.path.join(self.config_path, self.config_prefix, self.config_sources_file+'.csv')
             with open(filename, 'w', newline='') as csvfile:  
                 csvwriter = csv.writer(csvfile)  
-                csvwriter.writerow(['url', 'file'])  
+                csvwriter.writerow(['url', 'file','license','title','datetaken','latitude','longitude','accuracy','width','height'])  
                 csvwriter.writerows(self.sources)
+
+    def create_folder(self,path):
+        if not os.path.isdir(path):
+            os.makedirs(path)
 
     def run(self):
         logging.info("Starting...")
@@ -194,10 +198,12 @@ class FlickrImageDownload:
             tag_mode='all',
             tags=self.config_search,
             extras='url_l, url_o ,license, description, date_taken, owner_name, original_format, geo, o_dims',
-            per_page=100,           
+            per_page=100,         
             sort='relevance',
-            #license='0'
             )
+
+        save_path = os.path.join(self.config_path, self.config_prefix)
+        self.create_folder(save_path)
 
         for photo in photos:
             img, url = self.obtain_photo(photo)
